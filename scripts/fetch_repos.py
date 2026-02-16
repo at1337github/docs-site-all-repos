@@ -9,6 +9,7 @@ import shutil
 import requests
 import base64
 import yaml
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -193,13 +194,28 @@ def generate_navigation(docs_dir: Path) -> List[Dict[str, Any]]:
 
 def update_mkdocs_config(nav: List[Dict[str, Any]], config_path: Path):
     """Update mkdocs.yml with the generated navigation."""
+    # Read the existing config as text to preserve special YAML tags
     with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+        content = f.read()
     
-    config['nav'] = nav
+    # Generate the navigation YAML string
+    nav_yaml = yaml.dump({'nav': nav}, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # Strip trailing whitespace from the YAML output
+    nav_yaml = nav_yaml.strip()
     
+    # Find and replace the nav section in the original content
+    # Pattern matches "nav:" followed by content until:
+    # - A line starting with a non-whitespace character (next section), OR
+    # - Two consecutive newlines followed by a non-whitespace character (blank line then next section), OR
+    # - End of file
+    pattern = r'^nav:.*?(?=\n[^\s\n]|\n\n[^\s]|\Z)'
+    replacement = nav_yaml
+    
+    updated_content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)
+    
+    # Write back the updated content
     with open(config_path, 'w') as f:
-        yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        f.write(updated_content)
 
 
 def main():

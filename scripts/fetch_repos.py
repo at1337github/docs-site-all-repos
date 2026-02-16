@@ -9,6 +9,7 @@ import shutil
 import requests
 import base64
 import yaml
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -199,14 +200,15 @@ def update_mkdocs_config(nav: List[Dict[str, Any]], config_path: Path):
     
     # Generate the navigation YAML string
     nav_yaml = yaml.dump({'nav': nav}, default_flow_style=False, sort_keys=False, allow_unicode=True)
-    # Remove the wrapping braces if any and get just the nav section
+    # Strip trailing whitespace from the YAML output
     nav_yaml = nav_yaml.strip()
     
     # Find and replace the nav section in the original content
-    # Pattern: find "nav:" followed by everything until the end of file or next top-level key
-    import re
-    # Match from "nav:" to either end of file or start of next non-indented line
-    pattern = r'^nav:.*?(?=\n\S|\Z)'
+    # Pattern matches "nav:" followed by content until:
+    # - A line starting with a non-whitespace character (next section), OR
+    # - Two consecutive newlines followed by a non-whitespace character (blank line then next section), OR
+    # - End of file
+    pattern = r'^nav:.*?(?=\n[^\s\n]|\n\n[^\s]|\Z)'
     replacement = nav_yaml
     
     updated_content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)

@@ -193,13 +193,27 @@ def generate_navigation(docs_dir: Path) -> List[Dict[str, Any]]:
 
 def update_mkdocs_config(nav: List[Dict[str, Any]], config_path: Path):
     """Update mkdocs.yml with the generated navigation."""
+    # Read the existing config as text to preserve special YAML tags
     with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
+        content = f.read()
     
-    config['nav'] = nav
+    # Generate the navigation YAML string
+    nav_yaml = yaml.dump({'nav': nav}, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    # Remove the wrapping braces if any and get just the nav section
+    nav_yaml = nav_yaml.strip()
     
+    # Find and replace the nav section in the original content
+    # Pattern: find "nav:" followed by everything until the end of file or next top-level key
+    import re
+    # Match from "nav:" to either end of file or start of next non-indented line
+    pattern = r'^nav:.*?(?=\n\S|\Z)'
+    replacement = nav_yaml
+    
+    updated_content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)
+    
+    # Write back the updated content
     with open(config_path, 'w') as f:
-        yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        f.write(updated_content)
 
 
 def main():

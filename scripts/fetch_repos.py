@@ -5,6 +5,7 @@ Fetch markdown files from all configured repositories and organize them for MkDo
 
 import os
 import sys
+import shutil
 import requests
 import base64
 import yaml
@@ -218,7 +219,6 @@ def main():
     if docs_dir.exists():
         for item in docs_dir.iterdir():
             if item.is_dir():
-                import shutil
                 shutil.rmtree(item)
             elif item.name != 'index.md':
                 item.unlink()
